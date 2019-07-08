@@ -87,10 +87,4 @@ Sample output of file : MyApp_07-09-2019.log
 2019/07/09 00:57:25 INFO   hello.go:24  go2 Log message 1008  
 
 
-## TODO
-1. Add method to set the log file Name
-2. Add method to set the logfile path 
-3. Add method to set the loglevel
-
-
 
