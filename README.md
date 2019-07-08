@@ -4,6 +4,8 @@ to apply what I have been learning in golang for some days now.
 The code is not fully tested and there are some more works to be done like setting the loglevel.
 Please comment on any issues or any feedback. I am happy to learn from the mistakes.
 
+The log file currently created in the format 'helloApp_07-08-2019.log' 
+
 ## install
 ```
 go get github.com/r-pai/logger
@@ -57,3 +59,11 @@ func main() {
 }
 
 ```
+
+## TODO
+1. Add method to set the log file Name
+2. Add method to set the logfile path 
+3. Add method to set the loglevel
+
+
+
