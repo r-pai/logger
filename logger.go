@@ -14,8 +14,7 @@ type Loglevel int
 
 //Exported Logger Variables
 var (
-	Logger         *log.Logger
-	LOGGERLOGLEVEL = LINFO
+	Logger *log.Logger
 )
 
 //Exported LogLevel constant
@@ -28,12 +27,18 @@ const (
 )
 
 var (
-	logLevelMap map[Loglevel]string
-	logChannel  chan string
+	logLevelMap    map[Loglevel]string
+	logChannel     chan string
+	loggerLogLevel Loglevel
 )
 
 //initLogLevelMap Inizlizes the log level Map
-func initLogLevelMap() {
+func initLogLevel(defLoggerLoglevel Loglevel) {
+
+	//Set the LogggerLogLevel
+	loggerLogLevel = defLoggerLoglevel
+
+	//Initalize the logLevelMap
 	logLevelMap = make(map[Loglevel]string)
 
 	logLevelMap[LDEBUG] = "DEBUG"
@@ -41,6 +46,7 @@ func initLogLevelMap() {
 	logLevelMap[LWARN] = "WARN"
 	logLevelMap[LERROR] = "ERROR"
 	logLevelMap[LFATAL] = "FATAL"
+
 }
 
 //initLogLevelMap Inizlizes the log level Map
@@ -51,17 +57,19 @@ func initLogRoutine() {
 	go LogRoutine(logChannel)
 }
 
-//init function will Initialize the logger
-func init() {
+//CreateLogger function will create the logger
+//TODO: 1. Validate the filePath
+//      2. logging error in case of failure
+func CreateLogger(logPathFileName string, defLoggerLoglevel Loglevel) {
 
 	//Init LogLevel Details
-	initLogLevelMap()
+	initLogLevel(defLoggerLoglevel)
 
 	//start Go Routine
 	initLogRoutine()
 
 	currentTime := time.Now()
-	logFileName := fmt.Sprintf("%s_%s.log", "helloApp", currentTime.Format("01-02-2006"))
+	logFileName := fmt.Sprintf("%s_%s.log", logPathFileName, currentTime.Format("01-02-2006"))
 
 	file, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -92,7 +100,7 @@ func Log(logLevel Loglevel, message string) {
 
 //validateLogLevel formats the message to desired type
 func validateLogLevel(logLevel Loglevel) bool {
-	if logLevel >= LOGGERLOGLEVEL {
+	if logLevel >= loggerLogLevel {
 		return true
 	}
 	return false
@@ -105,7 +113,6 @@ func sendToLogRoutine(logMessage string) {
 
 //LogRoutine purpose is to write log to the file
 func LogRoutine(logChannel chan string) {
-	fmt.Println("Started LogRoutine")
 	for {
 		logMessage := <-logChannel
 		Logger.Println(logMessage)
