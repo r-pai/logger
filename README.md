@@ -6,7 +6,7 @@ Please comment on any issues or any feedback. I am happy to learn from the mista
 
 ## install
 ```
-go get github.com/jmoiron/sqlx
+go get github.com/r-pai/logger
 ```
 
 ## usage
