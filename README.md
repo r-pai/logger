@@ -17,7 +17,7 @@ package main
 
 import (
 	"fmt"
-	"learn1/logger"
+	"github.com/r-pai/logger"
 	"time"
 )
 
