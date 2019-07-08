@@ -1,10 +1,7 @@
 ## logger
-logger package for Golang. The purpose of creating this package was to learn golang more , a use case 
-to apply what I have been learning in golang for some days now.
-The code is not fully tested and there are some more works to be done like setting the loglevel.
-Please comment on any issues or any feedback. I am happy to learn from the mistakes.
-
-The log file currently created in the format 'helloApp_07-08-2019.log' 
+logger package for Golang.  
+The code is not fully tested and there are some more works to be done like setting the loglevel.  
+Please comment on any issues or provide feedback on how to improve.  
 
 ## install
 ```
@@ -12,6 +9,26 @@ go get github.com/r-pai/logger
 ```
 
 ## usage
+
+### import the package
+
+>import "github.com/r-pai/logger"
+
+### Create Logger in main or in init.  
+The 1st param is the FullPathfilename and 2nd the LogLevel for the application
+
+>logger.CreateLogger("./MyApp", logger.LDEBUG)
+
+### Log the messages - 5 Types of LogLevels 
+
+>logger.Log(logger.LDEBUG , "Starting Hello LDEBUG")  
+>logger.Log(logger.LINFO, "Starting Hello LINFO")  
+>logger.Log(logger.LWARN, "Starting Hello LWARN")  
+>logger.Log(logger.LERROR, "Starting Hello LERROR")  
+>logger.Log(logger.LFATAL, "Starting Hello LFATAL")  
+
+
+## Sample Code
 ```golang
 package main
 
