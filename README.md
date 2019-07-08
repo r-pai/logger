@@ -17,9 +17,8 @@ package main
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/r-pai/logger"
+	"time"
 )
 
 func number() int {
