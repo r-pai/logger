@@ -18,8 +18,8 @@ The *'Log'* function can be called from any goroutine and the logging would not 
     Code is not fully tested in real applications.
  
 ***TODO**  
-    Add new functions to each loglevel to keep it simple.
-    For each log level define custome types to add more information into logs.
+- Add new functions to each loglevel to keep it simple  
+- For each log level define custome types to add more information into logs  
 
 Please comment on any issues or provide feedback on how to improve.  
 
