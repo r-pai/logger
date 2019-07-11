@@ -27,12 +27,19 @@ const (
 )
 
 var (
-	logLevelMap    map[Loglevel]string
-	logChannel     chan string
+	//Log Level Map has log level string
+	logLevelMap map[Loglevel]string
+
+	//Send Channel is to send log message to logRoutine
+	logSendChannel chan string
+	//Recv Channel is to get ack from logroutine for the Log message
+	logRecvChannel chan int
+
+	//loggerLogLevel is the applications log level
 	loggerLogLevel Loglevel
 )
 
-//initLogLevelMap Inizlizes the log level Map
+//initLogLevelMap Inializes the log level Map
 func initLogLevel(defLoggerLoglevel Loglevel) {
 
 	//Set the LogggerLogLevel
@@ -49,12 +56,14 @@ func initLogLevel(defLoggerLoglevel Loglevel) {
 
 }
 
-//initLogLevelMap Inizlizes the log level Map
+//initLogRoutine function is to initlize the channgels
+// and start the logroutine
 func initLogRoutine() {
-	logChannel = make(chan string)
+	logSendChannel = make(chan string)
+	logRecvChannel = make(chan int)
 
 	//Infinite loop go routine
-	go LogRoutine(logChannel)
+	go LogRoutine(logSendChannel)
 }
 
 //CreateLogger function will create the logger
@@ -95,6 +104,7 @@ func Log(logLevel Loglevel, message string) {
 		//format the message and send to Log routine
 		logMessage := fmt.Sprintf("%-6v %-12v %s", logLevelMap[logLevel], fileLine, message)
 		sendToLogRoutine(logMessage)
+		//Wait for the reply
 	}
 }
 
@@ -108,13 +118,15 @@ func validateLogLevel(logLevel Loglevel) bool {
 
 //sendToLogRoutine will send the log message to the routine
 func sendToLogRoutine(logMessage string) {
-	logChannel <- logMessage
+	logSendChannel <- logMessage
+	_ = <-logRecvChannel
 }
 
 //LogRoutine purpose is to write log to the file
-func LogRoutine(logChannel chan string) {
+func LogRoutine(logSendChannel chan string) {
 	for {
-		logMessage := <-logChannel
+		logMessage := <-logSendChannel
 		Logger.Println(logMessage)
+		logRecvChannel <- 1
 	}
 }
