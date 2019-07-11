@@ -48,7 +48,23 @@ The 1st param is the FullPathfilename and 2nd the LogLevel for the application
 >logger.Log(logger.LFATAL, "Starting Hello LFATAL")  
 
 
-## # Sample Code
+## # Sample Code 1
+```golang
+package main
+
+import "github.com/r-pai/logger"
+
+func main() {
+
+	logger.Log(logger.LDEBUG, "Starting Hello LDEBUG")
+	logger.Log(logger.LINFO, "Starting Hello LINFO")
+	logger.Log(logger.LWARN, "Starting Hello LWARN")
+	logger.Log(logger.LERROR, "Starting Hello LERROR")
+	logger.Log(logger.LFATAL, "Starting Hello LFATAL")
+}
+```
+
+## # Sample Code 2
 ```golang
 package main
 
