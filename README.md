@@ -55,7 +55,9 @@ package main
 import "github.com/r-pai/logger"
 
 func main() {
-
+        //Create the logger
+	logger.CreateLogger("./MyApp", logger.LDEBUG)
+	
 	logger.Log(logger.LDEBUG, "Starting Hello LDEBUG")
 	logger.Log(logger.LINFO, "Starting Hello LINFO")
 	logger.Log(logger.LWARN, "Starting Hello LWARN")
