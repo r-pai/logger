@@ -4,23 +4,26 @@ This Golang logger package can be used to log the application messages to a file
 
 Its prettly simple to use. 
 
-*'CreateLogger'* function - creates the logger and 'Log' functions log messages.   
-There are 5 Loglevels currently which can be set to log 
-- LDEBUG 
-- LINFO 
-- LWARN
-- LERROR
-- LFATAL
+Create the logger Instance - Use *'CreateLogger'* function  
+There are 5 functions available to log, all of these linked to a log level.
+- Debug(format string, a ...interface{})
+- Info(format string, a ...interface{})
+- Warn(format string, a ...interface{})
+- Error(format string, a ...interface{})
+- Fatal(format string, a ...interface{})
 
-The *'Log'* function can be called from any goroutine and the logging would not be affected.  
+Each of the above functions are assoiated to 5 Loglevels.
+- LDebug 
+- LInfo
+- LWarn
+- LError
+- LFatal
+
+Any of the log level functions can be called from any goroutine and the logging would not be affected.  
 
 ***NOTE**  
     Code is not fully tested in real applications.
  
-***TODO**  
-- Add new functions to each loglevel to keep it simple  
-- For each log level define custome types to add more information into logs  
-
 Please comment on any issues or provide feedback on how to improve.  
 
 ## # How to install
@@ -32,37 +35,37 @@ go get github.com/r-pai/logger
 
 ### import the package
 
->import "github.com/r-pai/logger"
+>import logger "github.com/r-pai/logger"
 
 ### Create Logger in main or in init.  
-The 1st param is the FullPathfilename and 2nd the LogLevel for the application
 
->logger.CreateLogger("./MyApp", logger.LDEBUG)
+>logger.CreateLogger("./", "Myapp", logger.LDebug)
 
 ### Log the messages - 5 Types of LogLevels 
 
->logger.Log(logger.LDEBUG , "Starting Hello LDEBUG")  
->logger.Log(logger.LINFO, "Starting Hello LINFO")  
->logger.Log(logger.LWARN, "Starting Hello LWARN")  
->logger.Log(logger.LERROR, "Starting Hello LERROR")  
->logger.Log(logger.LFATAL, "Starting Hello LFATAL")  
-
+> logger.Debug("Starting Hello LDEBUG")
+> logger.Info("Starting Hello LINFO")
+> logger.Warn("Starting Hello LWARN")
+> logger.Error("Starting Hello LERROR")
+> logger.Fatal("Starting Hello LFATAL"
 
 ## # Sample Code 1
 ```golang
 package main
 
-import "github.com/r-pai/logger"
+import ( 
+       logger "github.com/r-pai/logger"
+       )
 
 func main() {
         //Create the logger
-	logger.CreateLogger("./MyApp", logger.LDEBUG)
+	logger.CreateLogger("./", "Myapp", logger.LDebug)
 	
-	logger.Log(logger.LDEBUG, "Starting Hello LDEBUG")
-	logger.Log(logger.LINFO, "Starting Hello LINFO")
-	logger.Log(logger.LWARN, "Starting Hello LWARN")
-	logger.Log(logger.LERROR, "Starting Hello LERROR")
-	logger.Log(logger.LFATAL, "Starting Hello LFATAL")
+	logger.Debug("Starting Hello LDEBUG")
+        logger.Info("Starting Hello LINFO")
+        logger.Warn("Starting Hello LWARN")
+        logger.Error("Starting Hello LERROR")
+        logger.Fatal("Starting Hello LFATAL"
 }
 ```
 
@@ -71,8 +74,7 @@ func main() {
 package main
 
 import (
-	"fmt"
-	"github.com/r-pai/logger"
+	logger "github.com/r-pai/logger"
 	"time"
 )
 
@@ -83,31 +85,25 @@ func number() int {
 
 func go1() {
 	for i := 0; i < 1000; i++ {
-		logger.Log(logger.LDEBUG, fmt.Sprintf("%s %d", "go1 Log message", i))
+		logger.Info"%s %d", "go1 Log message", i)
 		time.Sleep(400 * time.Millisecond)
 	}
 }
 
 func go2() {
 	for i := 1000; i < 3000; i++ {
-		logger.Log(logger.LINFO, fmt.Sprintf("%s %d", "go2 Log message", i))
+		logger.Info("%s %d", "go2 Log message", i)
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 func init() {
 	//Create the logger
-	logger.CreateLogger("./MyApp", logger.LDEBUG)
+	       logger.CreateLogger("./", "Myapp", logger.LDebug)
 }
 
 //main entry point
 func main() {
-
-	logger.Log(logger.LDEBUG, "Starting Hello LDEBUG")
-	logger.Log(logger.LINFO, "Starting Hello LINFO")
-	logger.Log(logger.LWARN, "Starting Hello LWARN")
-	logger.Log(logger.LERROR, "Starting Hello LERROR")
-	logger.Log(logger.LFATAL, "Starting Hello LFATAL")
 
 	go go1()
 	go go2()
