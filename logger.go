@@ -1,132 +1,197 @@
 package logger
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
-//Loglevel type as int
-type Loglevel int
-
-//Exported Logger Variables
-var (
-	Logger *log.Logger
-)
-
-//Exported LogLevel constant
-const (
-	LDEBUG Loglevel = iota
-	LINFO
-	LWARN
-	LERROR
-	LFATAL
-)
-
-var (
-	//Log Level Map has log level string
-	logLevelMap map[Loglevel]string
-
-	//Send Channel is to send log message to logRoutine
-	logSendChannel chan string
-	//Recv Channel is to get ack from logroutine for the Log message
-	logRecvChannel chan int
-
-	//loggerLogLevel is the applications log level
-	loggerLogLevel Loglevel
-)
-
-//initLogLevelMap Inializes the log level Map
-func initLogLevel(defLoggerLoglevel Loglevel) {
-
-	//Set the LogggerLogLevel
-	loggerLogLevel = defLoggerLoglevel
-
-	//Initalize the logLevelMap
-	logLevelMap = make(map[Loglevel]string)
-
-	logLevelMap[LDEBUG] = "DEBUG"
-	logLevelMap[LINFO] = "INFO"
-	logLevelMap[LWARN] = "WARN"
-	logLevelMap[LERROR] = "ERROR"
-	logLevelMap[LFATAL] = "FATAL"
-
+//GLogger Struct
+type GLogger struct {
+	logger        *log.Logger
+	logFileName   string
+	logFilePath   string
+	logTimeFormat string
+	logLevel      gloglevel
+	logAppRoot    string
+	logJSONFormat bool
 }
 
-//initLogRoutine function is to initlize the channgels
-// and start the logroutine
-func initLogRoutine() {
-	logSendChannel = make(chan string)
-	logRecvChannel = make(chan int)
+//Exported loglevel constant
+const (
+	LDebug gloglevel = iota
+	LInfo
+	LWarn
+	LError
+	LFatal
+)
 
-	//Infinite loop go routine
-	go LogRoutine(logSendChannel)
+type gloglevel int
+
+type jsonLog struct {
+	Severity string `json:"severity"`
+	Datetime string `json:"datetime"`
+	FileName string `json:"filename"`
+	LineNo   int    `json:"lineno"`
+	Message  string `json:"message"`
+}
+
+var (
+	//Logger pointer
+	glogger GLogger
+
+	//Log Level Map has log level string
+	glogLevelMap map[gloglevel]string
+
+	//Send Channel is to send log message to logRoutine
+	glogSendChannel chan string
+
+	//Recv Channel is to get ack from logroutine for the Log message
+	glogRecvChannel chan int
+)
+
+func initLogger() {
+	glogLevelMap = make(map[gloglevel]string)
+
+	glogLevelMap[LDebug] = "DEBUG"
+	glogLevelMap[LInfo] = "INFO"
+	glogLevelMap[LWarn] = "WARN"
+	glogLevelMap[LError] = "ERROR"
+	glogLevelMap[LFatal] = "FATAL"
+
+	glogSendChannel = make(chan string)
+	glogRecvChannel = make(chan int)
+
+	go logRoutine(glogSendChannel)
 }
 
 //CreateLogger function will create the logger
 //TODO: 1. Validate the filePath
 //      2. logging error in case of failure
-func CreateLogger(logPathFileName string, defLoggerLoglevel Loglevel) {
+func CreateLogger(logFilePath string, logFileName string, loglevel gloglevel) *GLogger {
 
-	//Init LogLevel Details
-	initLogLevel(defLoggerLoglevel)
+	initLogger()
 
-	//start Go Routine
-	initLogRoutine()
+	logPathFileName := logFilePath + "/" + logFileName
+	logFile := fmt.Sprintf("%s_%s.log", logPathFileName, time.Now().Format("01-02-2006"))
+	logTimeFormat := "2006-01-02 15:04:05.000000"
 
-	currentTime := time.Now()
-	logFileName := fmt.Sprintf("%s_%s.log", logPathFileName, currentTime.Format("01-02-2006"))
-
-	file, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("error opening file: %v", err)
+		log.Fatalf("Error: Could not open file: %v", err)
 	}
 
-	Logger = log.New(file, "", log.LstdFlags)
+	glogger = GLogger{log.New(file, "", 0), logFileName, logFilePath, logTimeFormat, loglevel, "", false}
+	return &glogger
 }
 
-//Log is the entry point to log message
-func Log(logLevel Loglevel, message string) {
-
-	if true == validateLogLevel(logLevel) {
-
-		//Get the FileName and Line number of the Log function caller
-		fileLine := ""
-		_, fPath, fLine, ok := runtime.Caller(1)
-		if ok {
-			fName := filepath.Base(fPath)
-			fileLine = fmt.Sprintf("%s:%d", fName, fLine)
-		}
-
-		//format the message and send to Log routine
-		logMessage := fmt.Sprintf("%-6v %-12v %s", logLevelMap[logLevel], fileLine, message)
-		sendToLogRoutine(logMessage)
-		//Wait for the reply
-	}
-}
-
-//validateLogLevel formats the message to desired type
-func validateLogLevel(logLevel Loglevel) bool {
-	if logLevel >= loggerLogLevel {
+func (g *GLogger) isNil() bool {
+	if g != nil {
 		return true
 	}
 	return false
 }
 
-//sendToLogRoutine will send the log message to the routine
-func sendToLogRoutine(logMessage string) {
-	logSendChannel <- logMessage
-	_ = <-logRecvChannel
+//SetAppRootFolder sets the root folder
+func (g *GLogger) SetAppRootFolder(rootFolderName string) {
+	if g.isNil() {
+		g.logAppRoot = rootFolderName
+	}
 }
 
-//LogRoutine purpose is to write log to the file
-func LogRoutine(logSendChannel chan string) {
+//SetLogTimeFormat sets the root folder
+func (g *GLogger) SetLogTimeFormat(logTimeFormat string) {
+	if g.isNil() {
+		g.logTimeFormat = logTimeFormat
+	}
+}
+
+//SetJSONLog sets the root folder
+func (g *GLogger) SetJSONLog(set bool) {
+	g.logJSONFormat = set
+}
+
+func internalLog(loglevel gloglevel, message string) {
+	if loglevel >= glogger.logLevel {
+
+		fileName, fLineNo := getFName()
+		logMessage := jsonLog{glogLevelMap[loglevel],
+			time.Now().Format(glogger.logTimeFormat),
+			fileName,
+			fLineNo,
+			message}.format()
+
+		sendToLogRoutine(logMessage)
+	}
+}
+
+func sendToLogRoutine(logMessage string) {
+	glogSendChannel <- logMessage
+	_ = <-glogRecvChannel
+}
+
+func logRoutine(logSendChannel chan string) {
 	for {
 		logMessage := <-logSendChannel
-		Logger.Println(logMessage)
-		logRecvChannel <- 1
+		glogger.logger.Println(logMessage)
+		glogRecvChannel <- 1
 	}
+}
+
+func (j jsonLog) format() string {
+	if glogger.logJSONFormat {
+		jformat, _ := json.Marshal(j)
+		return string(jformat)
+	}
+
+	format := fmt.Sprintf("%s %-6v %s:%d %s", j.Datetime, j.Severity, j.FileName, j.LineNo, j.Message)
+	return format
+}
+
+func getFName() (fName string, fLine int) {
+	_, fPath, fLine, ok := runtime.Caller(3)
+	if ok {
+		if glogger.logAppRoot == "" {
+			fName = filepath.Base(fPath)
+		} else {
+			s := strings.Split(fPath, glogger.logAppRoot)
+			if len(s) >= 2 {
+				fName = s[1][1:]
+			} else {
+				fName = filepath.Base(fPath)
+			}
+
+		}
+	}
+	return
+}
+
+//Debug Function
+func Debug(format string, a ...interface{}) {
+	internalLog(LDebug, fmt.Sprintf(format, a...))
+}
+
+//Info Function
+func Info(format string, a ...interface{}) {
+	internalLog(LInfo, fmt.Sprintf(format, a...))
+}
+
+//Warn Function
+func Warn(format string, a ...interface{}) {
+	internalLog(LWarn, fmt.Sprintf(format, a...))
+}
+
+//Error Function
+func Error(format string, a ...interface{}) {
+	internalLog(LError, fmt.Sprintf(format, a...))
+}
+
+//Fatal Function
+func Fatal(format string, a ...interface{}) {
+	internalLog(LFatal, fmt.Sprintf(format, a...))
 }
