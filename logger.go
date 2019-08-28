@@ -13,13 +13,22 @@ import (
 
 //GLogger Struct
 type GLogger struct {
-	logger        *log.Logger
+	logger *log.Logger
+
+	//Configs
 	logFileName   string
 	logFilePath   string
 	logTimeFormat string
 	logLevel      gloglevel
 	logAppRoot    string
 	logJSONFormat bool
+
+	//LoggerChannels
+	//Send Channel is to send log message to logRoutine
+	glogSendChannel chan string
+
+	//Recv Channel is to get ack from logroutine for the Log message
+	glogRecvChannel chan int
 }
 
 //Exported loglevel constant
@@ -33,7 +42,7 @@ const (
 
 type gloglevel int
 
-type jsonLog struct {
+type logDetails struct {
 	Severity string `json:"severity"`
 	Datetime string `json:"datetime"`
 	FileName string `json:"filename"`
@@ -42,17 +51,8 @@ type jsonLog struct {
 }
 
 var (
-	//Logger pointer
-	glogger GLogger
-
 	//Log Level Map has log level string
 	glogLevelMap map[gloglevel]string
-
-	//Send Channel is to send log message to logRoutine
-	glogSendChannel chan string
-
-	//Recv Channel is to get ack from logroutine for the Log message
-	glogRecvChannel chan int
 )
 
 func initLogger() {
@@ -63,11 +63,6 @@ func initLogger() {
 	glogLevelMap[LWarn] = "WARN"
 	glogLevelMap[LError] = "ERROR"
 	glogLevelMap[LFatal] = "FATAL"
-
-	glogSendChannel = make(chan string)
-	glogRecvChannel = make(chan int)
-
-	go logRoutine(glogSendChannel)
 }
 
 //CreateLogger function will create the logger
@@ -86,74 +81,107 @@ func CreateLogger(logFilePath string, logFileName string, loglevel gloglevel) *G
 		log.Fatalf("Error: Could not open file: %v", err)
 	}
 
-	glogger = GLogger{log.New(file, "", 0), logFileName, logFilePath, logTimeFormat, loglevel, "", false}
+	glogger := GLogger{
+		log.New(file, "", 0),
+		logFileName,
+		logFilePath,
+		logTimeFormat,
+		loglevel,
+		"",
+		false,
+		make(chan string),
+		make(chan int)}
+
+	go glogger.logRoutine(glogger.glogSendChannel)
+
 	return &glogger
 }
 
-func (g *GLogger) isNil() bool {
-	if g != nil {
+func (glogger *GLogger) isNil() bool {
+	if glogger != nil {
 		return true
 	}
 	return false
 }
 
 //SetAppRootFolder sets the root folder
-func (g *GLogger) SetAppRootFolder(rootFolderName string) {
-	if g.isNil() {
-		g.logAppRoot = rootFolderName
+func (glogger *GLogger) SetAppRootFolder(rootFolderName string) {
+	if glogger.isNil() {
+		glogger.logAppRoot = rootFolderName
 	}
 }
 
 //SetLogTimeFormat sets the root folder
-func (g *GLogger) SetLogTimeFormat(logTimeFormat string) {
-	if g.isNil() {
-		g.logTimeFormat = logTimeFormat
+//Time format can be constants from time package
+/*
+	ANSIC       = "Mon Jan _2 15:04:05 2006"
+	UnixDate    = "Mon Jan _2 15:04:05 MST 2006"
+	RubyDate    = "Mon Jan 02 15:04:05 -0700 2006"
+	RFC822      = "02 Jan 06 15:04 MST"
+	RFC822Z     = "02 Jan 06 15:04 -0700" // RFC822 with numeric zone
+	RFC850      = "Monday, 02-Jan-06 15:04:05 MST"
+	RFC1123     = "Mon, 02 Jan 2006 15:04:05 MST"
+	RFC1123Z    = "Mon, 02 Jan 2006 15:04:05 -0700" // RFC1123 with numeric zone
+	RFC3339     = "2006-01-02T15:04:05Z07:00"
+	RFC3339Nano = "2006-01-02T15:04:05.999999999Z07:00"
+	Kitchen     = "3:04PM"
+	// Handy time stamps.
+	Stamp      = "Jan _2 15:04:05"
+	StampMilli = "Jan _2 15:04:05.000"
+	StampMicro = "Jan _2 15:04:05.000000"
+	StampNano  = "Jan _2 15:04:05.000000000"
+*/
+func (glogger *GLogger) SetLogTimeFormat(logTimeFormat string) {
+	if glogger.isNil() {
+		glogger.logTimeFormat = logTimeFormat
 	}
 }
 
 //SetJSONLog sets the root folder
-func (g *GLogger) SetJSONLog(set bool) {
-	g.logJSONFormat = set
+func (glogger *GLogger) SetJSONLog(set bool) {
+	glogger.logJSONFormat = set
 }
 
-func internalLog(loglevel gloglevel, message string) {
+func (glogger *GLogger) internalLog(loglevel gloglevel, message string) {
 	if loglevel >= glogger.logLevel {
 
-		fileName, fLineNo := getFName()
-		logMessage := jsonLog{glogLevelMap[loglevel],
+		fileName, fLineNo := glogger.getFName()
+		logD := logDetails{
+			glogLevelMap[loglevel],
 			time.Now().Format(glogger.logTimeFormat),
 			fileName,
 			fLineNo,
-			message}.format()
+			message}
+		logMessage := glogger.format(logD)
 
-		sendToLogRoutine(logMessage)
+		glogger.sendToLogRoutine(logMessage)
 	}
 }
 
-func sendToLogRoutine(logMessage string) {
-	glogSendChannel <- logMessage
-	_ = <-glogRecvChannel
+func (glogger *GLogger) sendToLogRoutine(logMessage string) {
+	glogger.glogSendChannel <- logMessage
+	_ = <-glogger.glogRecvChannel
 }
 
-func logRoutine(logSendChannel chan string) {
+func (glogger *GLogger) logRoutine(logSendChannel chan string) {
 	for {
 		logMessage := <-logSendChannel
 		glogger.logger.Println(logMessage)
-		glogRecvChannel <- 1
+		glogger.glogRecvChannel <- 1
 	}
 }
 
-func (j jsonLog) format() string {
+func (glogger *GLogger) format(logD logDetails) string {
 	if glogger.logJSONFormat {
-		jformat, _ := json.Marshal(j)
+		jformat, _ := json.Marshal(logD)
 		return string(jformat)
 	}
 
-	format := fmt.Sprintf("%s %-6v %s:%d %s", j.Datetime, j.Severity, j.FileName, j.LineNo, j.Message)
+	format := fmt.Sprintf("%s %-6v %s:%d %s", logD.Datetime, logD.Severity, logD.FileName, logD.LineNo, logD.Message)
 	return format
 }
 
-func getFName() (fName string, fLine int) {
+func (glogger *GLogger) getFName() (fName string, fLine int) {
 	_, fPath, fLine, ok := runtime.Caller(3)
 	if ok {
 		if glogger.logAppRoot == "" {
@@ -171,27 +199,27 @@ func getFName() (fName string, fLine int) {
 	return
 }
 
-//Debug Function
-func Debug(format string, a ...interface{}) {
-	internalLog(LDebug, fmt.Sprintf(format, a...))
+//Debug logs message in debug log level
+func (glogger *GLogger) Debug(format string, a ...interface{}) {
+	glogger.internalLog(LDebug, fmt.Sprintf(format, a...))
 }
 
-//Info Function
-func Info(format string, a ...interface{}) {
-	internalLog(LInfo, fmt.Sprintf(format, a...))
+//Info logs message in info log level
+func (glogger *GLogger) Info(format string, a ...interface{}) {
+	glogger.internalLog(LInfo, fmt.Sprintf(format, a...))
 }
 
-//Warn Function
-func Warn(format string, a ...interface{}) {
-	internalLog(LWarn, fmt.Sprintf(format, a...))
+//Warn logs message in warning log level
+func (glogger *GLogger) Warn(format string, a ...interface{}) {
+	glogger.internalLog(LWarn, fmt.Sprintf(format, a...))
 }
 
-//Error Function
-func Error(format string, a ...interface{}) {
-	internalLog(LError, fmt.Sprintf(format, a...))
+//Error logs message in error log level
+func (glogger *GLogger) Error(format string, a ...interface{}) {
+	glogger.internalLog(LError, fmt.Sprintf(format, a...))
 }
 
-//Fatal Function
-func Fatal(format string, a ...interface{}) {
-	internalLog(LFatal, fmt.Sprintf(format, a...))
+//Fatal logs message in fatal log level
+func (glogger *GLogger) Fatal(format string, a ...interface{}) {
+	glogger.internalLog(LFatal, fmt.Sprintf(format, a...))
 }

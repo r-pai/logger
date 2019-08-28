@@ -1,11 +1,12 @@
 ## # logger (A logger package for Go)
 
-This Golang logger package can be used to log the application messages to a file.
+This package is for logging messages to file. 
+The log format can be in json or can be normal.
 
 Its prettly simple to use. 
 
 Create the logger Instance - Use *'CreateLogger'* function  
-There are 5 functions available to log, all of these linked to a log level.
+There are 5 methods available to log, all of these linked to a log level.
 - Debug(format string, a ...interface{})
 - Info(format string, a ...interface{})
 - Warn(format string, a ...interface{})
@@ -21,11 +22,6 @@ Each of the above functions are assoiated to 5 Loglevels.
 
 Any of the log level functions can be called from any goroutine and the logging would not be affected.  
 
-***NOTE**  
-    Code is not fully tested in real applications.
- 
-Please comment on any issues or provide feedback on how to improve.  
-
 ## # How to install
 ```
 go get github.com/r-pai/logger
@@ -35,11 +31,11 @@ go get github.com/r-pai/logger
 
 ### import the package
 
->import logger "github.com/r-pai/logger"
+>import "github.com/r-pai/logger"
 
 ### Create Logger in main or in init.  
 
->logger.CreateLogger("./", "Myapp", logger.LDebug)
+>log := logger.CreateLogger("./", "Myapp", logger.LDebug)
 
 ### Log the messages - 5 Types of LogLevels 
 
@@ -54,18 +50,18 @@ go get github.com/r-pai/logger
 package main
 
 import ( 
-       logger "github.com/r-pai/logger"
+        "github.com/r-pai/logger"
        )
 
+//Create the logger instance
+var log = logger.CreateLogger("./", "Myapp", logger.LDebug)
+
 func main() {
-        //Create the logger
-	logger.CreateLogger("./", "Myapp", logger.LDebug)
-	
-	logger.Debug("Starting Hello LDEBUG")
-        logger.Info("Starting Hello LINFO")
-        logger.Warn("Starting Hello LWARN")
-        logger.Error("Starting Hello LERROR")
-        logger.Fatal("Starting Hello LFATAL"
+	log.Debug("Starting Hello LDEBUG")
+	log.Info("Starting Hello LINFO")
+	log.Warn("Starting Hello LWARN")
+	log.Error("Starting Hello LERROR")
+	log.Fatal("Starting Hello LFATAL")
 }
 ```
 
@@ -74,7 +70,7 @@ func main() {
 package main
 
 import (
-	logger "github.com/r-pai/logger"
+	"github.com/r-pai/logger"
 	"time"
 )
 
@@ -85,23 +81,33 @@ func number() int {
 
 func go1() {
 	for i := 0; i < 1000; i++ {
-		logger.Info"%s %d", "go1 Log message", i)
+		log.Info("%s %d", "go1 Log message", i)
 		time.Sleep(400 * time.Millisecond)
 	}
 }
 
 func go2() {
 	for i := 1000; i < 3000; i++ {
-		logger.Info("%s %d", "go2 Log message", i)
+		log.Info("%s %d", "go2 Log message", i)
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func init() {
-	//Create the logger
-	       logger.CreateLogger("./", "Myapp", logger.LDebug)
-}
 
+//Create the logger
+var log *logger.GLogger
+
+func init()
+{
+	log = logger.CreateLogger("./", "Myapp", logger.LDebug)
+
+	//constants from time package
+	log.SetLogTimeFormat(time.RFC850) //set the time format
+
+	//logout put can be in json format
+	log.SetJSONLog(true)
+
+}
 //main entry point
 func main() {
 
