@@ -128,6 +128,10 @@ Sample output of file : **MyApp_07-09-2019.log**
 
 ![Screenshot 2019-07-09 at 10 08 59 AM](https://user-images.githubusercontent.com/33278265/60861025-81bb9a00-a236-11e9-8697-a8e330dfd0f0.png)
 
+Json Style output
+
+![Screen Shot 2019-08-28 at 10 41 42 pm](https://user-images.githubusercontent.com/33278265/63877584-86eec700-c9e5-11e9-943a-1471e91f8149.png)
+
 
 
 
