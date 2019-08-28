@@ -30,21 +30,22 @@ go get github.com/r-pai/logger
 ## # How to use
 
 ### import the package
-
->import "github.com/r-pai/logger"
-
+```golang
+import "github.com/r-pai/logger"
+```
 ### Create Logger in main or in init.  
 
->log := logger.CreateLogger("./", "Myapp", logger.LDebug)
-
+```golang
+log := logger.CreateLogger("./", "Myapp", logger.LDebug)
+```
 ### Log the messages - 5 Types of LogLevels 
-
-> logger.Debug("Starting Hello LDEBUG")
-> logger.Info("Starting Hello LINFO")
-> logger.Warn("Starting Hello LWARN")
-> logger.Error("Starting Hello LERROR")
-> logger.Fatal("Starting Hello LFATAL"
-
+```golang
+ log.Debug("Starting Hello LDEBUG")
+ log.Info("Starting Hello LINFO")
+ log.Warn("Starting Hello LWARN")
+ log.Error("Starting Hello LERROR")
+ log.Fatal("Starting Hello LFATAL")
+```
 ## # Sample Code 1
 ```golang
 package main
@@ -65,7 +66,7 @@ func main() {
 }
 ```
 
-## # Sample Code 2
+## # Sample Code 2 - Log messages in go routines
 ```golang
 package main
 
@@ -97,8 +98,7 @@ func go2() {
 //Create the logger
 var log *logger.GLogger
 
-func init()
-{
+func init(){
 	log = logger.CreateLogger("./", "Myapp", logger.LDebug)
 
 	//constants from time package
